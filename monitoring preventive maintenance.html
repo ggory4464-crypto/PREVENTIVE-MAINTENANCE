@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXUS PM // Clean & Simple CMMS</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-base: #070b14;
+  --bg-surface: rgba(15, 23, 42, 0.78);
+  --bg-elevated: rgba(30, 41, 59, 0.68);
+  --border: rgba(148, 163, 184, 0.14);
+  --border-glow: rgba(56, 189, 248, 0.35);
+  --text-main: #f1f5f9;
+  --text-muted: #94a3b8;
+  --cyan: #38bdf8;
+  --indigo: #818cf8;
+  --emerald: #10b981;
+  --amber: #f59e0b;
+  --rose: #f43f5e;
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background-color: var(--bg-base);
+  background-image: 
+    radial-gradient(circle at 15% 10%, rgba(56, 189, 248, 0.08), transparent 35%),
+    radial-gradient(circle at 85% 85%, rgba(129, 140, 248, 0.08), transparent 40%),
+    linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 36px 36px, 36px 36px;
+  color: var(--text-main);
+  font: 13.5px/1.5 var(--font-sans);
+  overflow-x: hidden;
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #070b14; }
+::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+
+.app { display: flex; min-height: 100vh; }
+
+/* SIDEBAR */
+.sidebar {
+  width: 250px; background: rgba(10, 15, 28, 0.92); backdrop-filter: blur(20px);
+  border-right: 1px solid var(--border); padding: 24px 16px; display: flex;
+  flex-direction: column; position: fixed; inset: 0 auto 0 0; z-index: 10;
+}
+.brand { display: flex; align-items: center; gap: 12px; padding: 0 8px 24px; border-bottom: 1px solid var(--border); margin-bottom: 14px; }
+.brandmark {
+  width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, #0284c7, #6366f1);
+  display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 15px;
+  box-shadow: 0 0 15px rgba(56, 189, 248, 0.3); font-family: var(--font-mono);
+}
+.brand strong { display: block; font-size: 14px; letter-spacing: 0.5px; color: #fff; }
+.brand small { color: var(--cyan); font-size: 9.5px; letter-spacing: 1.2px; font-family: var(--font-mono); }
+
+.navlabel { font-size: 9.5px; letter-spacing: 1.5px; color: #475569; padding: 14px 12px 6px; font-weight: 700; }
+.nav button {
+  width: 100%; border: 1px solid transparent; background: transparent; color: var(--text-muted);
+  text-align: left; padding: 10px 12px; border-radius: 9px; display: flex; align-items: center;
+  gap: 11px; cursor: pointer; font: 600 12.5px var(--font-sans); margin: 2px 0; transition: all 0.2s ease;
+}
+.nav button:hover { background: rgba(255,255,255,0.04); color: #fff; transform: translateX(2px); }
+.nav button.active {
+  background: linear-gradient(90deg, rgba(56, 189, 248, 0.16), rgba(99, 102, 241, 0.05));
+  border-color: rgba(56, 189, 248, 0.3); color: #fff;
+}
+.nav button.active .ico { color: var(--cyan); }
+.ico { width: 16px; text-align: center; font-size: 14px; }
+
+.sidebottom { margin-top: auto; padding-top: 14px; border-top: 1px solid var(--border); }
+.backup-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
+
+/* MAIN AREA */
+.main { margin-left: 250px; width: calc(100% - 250px); min-width: 0; }
+.topbar {
+  height: 64px; background: rgba(7, 11, 20, 0.78); backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border); display: flex; align-items: center;
+  justify-content: space-between; padding: 0 32px; position: sticky; top: 0; z-index: 8;
+}
+.crumb { color: var(--text-muted); font-size: 11.5px; font-family: var(--font-mono); }
+.crumb b { color: #fff; font-size: 12.5px; margin-left: 6px; }
+.topright { display: flex; align-items: center; gap: 14px; position: relative; }
+.live-pill {
+  background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #34d399; padding: 4px 10px; border-radius: 20px; font: 700 9.5px var(--font-mono);
+  display: flex; align-items: center; gap: 6px;
+}
+.pulse { width: 6px; height: 6px; border-radius: 50%; background: #10b981; animation: pulseAnim 2s infinite; }
+@keyframes pulseAnim { 70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
+
+.notif-btn {
+  background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 9px;
+  cursor: pointer; position: relative; color: #fff; width: 34px; height: 34px; display: grid; place-items: center; font-size: 14px;
+}
+.notif-badge {
+  position: absolute; top: -3px; right: -3px; background: var(--rose); color: #fff;
+  font: 800 8.5px var(--font-mono); width: 16px; height: 16px; border-radius: 50%; display: grid; place-items: center;
+}
+.notif-pop {
+  position: absolute; top: 44px; right: 0; width: 320px; background: #0f172a;
+  border: 1px solid var(--border-glow); border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+  display: none; z-index: 20; overflow: hidden; max-height: 380px; overflow-y: auto;
+}
+.notif-pop.show { display: block; }
+.notif-item { padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 11px; color: #cbd5e1; }
+
+.content { padding: 26px 32px 50px; max-width: 1600px; margin: auto; }
+.pagehead { display: flex; justify-content: space-between; align-items: flex-end; gap: 15px; margin-bottom: 22px; flex-wrap: wrap; }
+.eyebrow { color: var(--cyan); font: 700 9.5px var(--font-mono); letter-spacing: 1.8px; text-transform: uppercase; }
+.pagehead h1 { font-size: 24px; font-weight: 800; margin: 3px 0; letter-spacing: -0.5px; background: linear-gradient(90deg, #fff, #94a3b8); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.sub { color: var(--text-muted); font-size: 12px; }
+
+/* BUTTONS */
+.btn {
+  border: 1px solid var(--border); background: var(--bg-elevated); color: #e2e8f0;
+  padding: 8px 13px; border-radius: 8px; font: 600 11.5px var(--font-sans);
+  cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;
+}
+.btn:hover { border-color: var(--cyan); color: #fff; background: rgba(56, 189, 248, 0.1); }
+.btn.primary {
+  background: linear-gradient(135deg, #0284c7, #2563eb); border-color: rgba(56, 189, 248, 0.5);
+  color: #fff; box-shadow: 0 4px 15px rgba(2, 132, 199, 0.3);
+}
+.btn.danger { background: linear-gradient(135deg, #e11d48, #be123c); border-color: rgba(244, 63, 94, 0.5); color: #fff; }
+.btn.sm { padding: 4px 9px; font-size: 10.5px; border-radius: 6px; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* STATS */
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 18px; }
+.stat {
+  background: var(--bg-surface); backdrop-filter: blur(14px);
+  border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; position: relative; overflow: hidden;
+}
+.stat::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--accent, var(--cyan)), transparent); }
+.statrow { display: flex; justify-content: space-between; align-items: center; }
+.statlabel { font: 700 10px var(--font-mono); color: var(--text-muted); letter-spacing: 0.6px; }
+.staticon { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; font-size: 13px; background: rgba(255,255,255,0.03); border: 1px solid var(--border); }
+.statnum { font: 800 26px var(--font-mono); margin: 8px 0 3px; color: #fff; }
+.statfoot { font-size: 10.5px; color: var(--text-muted); }
+
+/* PANELS */
+.panels { display: grid; grid-template-columns: 1.5fr 1fr; gap: 14px; margin-bottom: 18px; }
+.panel { background: var(--bg-surface); backdrop-filter: blur(14px); border: 1px solid var(--border); border-radius: 12px; min-width: 0; }
+.panelhead { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.panelhead h3 { font-size: 13px; font-weight: 700; margin: 0; color: #fff; }
+.panelbody { padding: 16px 18px; }
+
+.chart { height: 170px; display: flex; align-items: end; gap: 12px; padding: 10px 4px 22px; border-bottom: 1px solid var(--border); position: relative; }
+.barcol { height: 100%; flex: 1; display: flex; flex-direction: column; justify-content: end; align-items: center; position: relative; }
+.barpair { height: 100%; width: 100%; display: flex; align-items: end; justify-content: center; gap: 4px; }
+.bar { width: 28%; max-width: 22px; border-radius: 5px 5px 0 0; background: linear-gradient(180deg, #38bdf8, #0284c7); min-height: 4px; }
+.bar.alt { background: rgba(148, 163, 184, 0.2); }
+.barlabel { position: absolute; bottom: -20px; font: 600 9.5px var(--font-mono); color: var(--text-muted); }
+
+.donutwrap { display: flex; align-items: center; gap: 20px; padding: 4px; }
+.donut { width: 124px; height: 124px; border-radius: 50%; background: #10b981; display: grid; place-items: center; flex-shrink: 0; box-shadow: 0 0 20px rgba(16, 185, 129, 0.12); }
+.donut-inner { width: 88px; height: 88px; border-radius: 50%; background: #0c1322; display: grid; place-items: center; font: 800 24px var(--font-mono); color: #fff; }
+.keylist { display: grid; gap: 10px; width: 100%; }
+.key { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; }
+.key span:first-child { color: var(--text-muted); }
+.key b { font-family: var(--font-mono); color: #fff; }
+.key i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; margin-right: 6px; }
+
+/* SPLIT WORKSPACE */
+.split-view { display: grid; grid-template-columns: 1fr 320px; gap: 14px; align-items: start; }
+.drawer-card { background: var(--bg-surface); backdrop-filter: blur(14px); border: 1px solid var(--border-glow); border-radius: 12px; padding: 18px; position: sticky; top: 82px; }
+
+/* TABLES & INPUTS */
+.tablepanel { background: var(--bg-surface); backdrop-filter: blur(14px); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.toolbar { display: flex; justify-content: space-between; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.filters { display: flex; gap: 8px; flex-wrap: wrap; }
+.search, select, input, textarea {
+  border: 1px solid var(--border); background: rgba(15, 23, 42, 0.9);
+  border-radius: 7px; padding: 7px 10px; font: 11.5px var(--font-sans); color: #fff; outline: none;
+}
+.search { width: 210px; }
+.search:focus, select:focus, input:focus, textarea:focus { border-color: var(--cyan); }
+
+.tablewrap { overflow: auto; }
+table { width: 100%; border-collapse: collapse; white-space: nowrap; }
+th { background: rgba(15, 23, 42, 0.85); color: var(--text-muted); text-align: left; font: 700 9.5px var(--font-mono); letter-spacing: 0.6px; text-transform: uppercase; padding: 12px 14px; }
+td { padding: 12px 14px; border-top: 1px solid var(--border); font-size: 11.5px; color: #cbd5e1; }
+tbody tr { transition: background 0.15s; cursor: pointer; }
+tbody tr:hover { background: rgba(56, 189, 248, 0.05); }
+tbody tr.selected-row { background: rgba(56, 189, 248, 0.1); }
+.machine { font: 700 11.5px var(--font-mono); color: var(--cyan); }
+.muted { color: var(--text-muted); }
+.empty-state { padding: 32px 20px; text-align: center; color: var(--text-muted); font-size: 12px; }
+
+/* PILLS */
+.pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 20px; font: 700 9.5px var(--font-mono); letter-spacing: 0.3px; }
+.pill.green { background: rgba(16, 185, 129, 0.12); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.25); }
+.pill.amber { background: rgba(245, 158, 11, 0.12); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.25); }
+.pill.red { background: rgba(244, 63, 94, 0.12); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.25); }
+.pill.blue { background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.25); }
+.pill.gray { background: rgba(148, 163, 184, 0.12); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.2); }
+
+.rowlink { color: var(--cyan); font-weight: 700; cursor: pointer; margin-right: 8px; font-size: 11px; }
+.rowlink:hover { text-decoration: underline; }
+.section { display: none; animation: fadeIn 0.2s ease; }
+.section.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+.hbar { width: 70px; height: 5px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; display: inline-block; vertical-align: middle; margin-right: 6px; }
+.hbar-fill { height: 100%; border-radius: 3px; }
+
+/* MODALS */
+.modalback { position: fixed; inset: 0; background: rgba(3, 7, 18, 0.8); backdrop-filter: blur(6px); display: none; align-items: center; justify-content: center; z-index: 30; padding: 16px; }
+.modalback.show { display: flex; }
+.modal { background: #0f172a; border: 1px solid var(--border-glow); width: min(540px, 100%); border-radius: 14px; box-shadow: 0 25px 60px rgba(0,0,0,0.7); overflow: hidden; max-height: 90vh; display: flex; flex-direction: column; }
+.modalhead { padding: 15px 18px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; color: #fff; font-size: 13px; }
+.modalbody { padding: 18px; overflow-y: auto; }
+.modalfoot { padding: 12px 18px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; background: rgba(7, 11, 20, 0.5); }
+.formgrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.field label { display: block; font: 700 10px var(--font-mono); color: var(--text-muted); margin-bottom: 4px; }
+.field input, .field select, .field textarea { width: 100%; }
+
+.sig-pad { border: 1px dashed var(--cyan); border-radius: 7px; background: #fff; cursor: crosshair; width: 100%; height: 95px; display: block; }
+
+.toast { position: fixed; right: 20px; bottom: 20px; background: #0f172a; border: 1px solid var(--cyan); color: #fff; padding: 10px 16px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.6); font-size: 12px; display: none; z-index: 40; }
+.toast.show { display: block; }
+.mobilemenu { display: none; }
+
+@media print {
+  body { background: #fff !important; color: #000 !important; }
+  .sidebar, .topbar, .actions, .toolbar, .modalfoot, .no-print { display: none !important; }
+  .main { margin-left: 0; width: 100%; }
+  .modalback { position: static; background: none; display: block !important; }
+  .modal { background: #fff; color: #000; border: none; box-shadow: none; width: 100%; max-height: none; }
+}
+@media(max-width: 1100px) { .split-view, .panels { grid-template-columns: 1fr; } .drawer-card { position: static; } }
+@media(max-width: 760px) { .sidebar { transform: translateX(-100%); transition: .25s; width: 240px; } .sidebar.open { transform: translateX(0); } .main { margin-left: 0; width: 100%; } .mobilemenu { display: inline-flex; } .formgrid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brandmark">NX</div>
+      <div><strong>NEXUS PM</strong><small>CLEAN CMMS v2.0</small></div>
+    </div>
+    <div class="navlabel">MENU UTAMA</div>
+    <nav class="nav">
+      <button class="active" data-page="dashboard"><span class="ico">◈</span>Dashboard</button>
+      <button data-page="machines"><span class="ico">⚙</span>Data Mesin</button>
+      <button data-page="schedule"><span class="ico">◷</span>Jadwal PM</button>
+      <button data-page="workorders"><span class="ico">⚡</span>Work Orders</button>
+      <button data-page="history"><span class="ico">▤</span>Riwayat Berita Acara</button>
+      <div class="navlabel">PENDUKUNG</div>
+      <button data-page="spareparts"><span class="ico">❖</span>Master Spare Parts</button>
+      <button data-page="reports"><span class="ico">◭</span>Analisis & KPI</button>
+      <button data-page="users"><span class="ico">◉</span>Daftar PIC / Teknisi</button>
+    </nav>
+    <div class="sidebottom">
+      <div class="backup-row">
+        <button class="btn sm" onclick="exportBackup()" title="Download Data JSON">⇩ Backup</button>
+        <button class="btn sm" onclick="document.getElementById('importFile').click()" title="Muat Data JSON">⇧ Restore</button>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importBackup(event)">
+      </div>
+      <button class="btn sm danger" style="width:100%;justify-content:center;margin-bottom:8px" onclick="resetAllData()">↺ Reset Data</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <header class="topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="btn mobilemenu" id="menuBtn">☰</button>
+        <div class="crumb">CMMS // <b id="crumb">DASHBOARD</b></div>
+      </div>
+      <div class="topright">
+        <div class="live-pill"><span class="pulse"></span> AUTO-SAVE</div>
+        <button class="notif-btn" onclick="toggleNotif()" title="Peringatan">🔔<span class="notif-badge" id="notifCount">0</span></button>
+        <div class="notif-pop" id="notifPop">
+          <div style="padding:10px 14px;background:rgba(56,189,248,0.08);font:700 10.5px var(--font-mono);color:var(--cyan);border-bottom:1px solid var(--border)">NOTIFIKASI SISTEM</div>
+          <div id="notifList"></div>
+        </div>
+      </div>
+    </header>
+
+    <div class="content">
+      <!-- 1. DASHBOARD -->
+      <section class="section active" id="dashboard">
+        <div class="pagehead">
+          <div>
+            <div class="eyebrow">RINGKASAN OPERASIONAL</div>
+            <h1>Executive Overview</h1>
+            <div class="sub">Pantau status mesin, jadwal perawatan, dan eksekusi tugas dalam satu tampilan ringkas.</div>
+          </div>
+          <div class="actions">
+            <button class="btn" onclick="openScheduleModal()">＋ Buat Jadwal PM</button>
+            <button class="btn primary" onclick="openNewWoModal()">⚡ Buat Work Order</button>
+          </div>
+        </div>
+
+        <div class="stats">
+          <div class="stat" style="--accent: #38bdf8">
+            <div class="statrow"><span class="statlabel">TOTAL MESIN</span><span class="staticon" style="color:var(--cyan)">⚙</span></div>
+            <div class="statnum" id="statMachines">40</div>
+            <div class="statfoot">Master data aktif</div>
+          </div>
+          <div class="stat" style="--accent: #10b981">
+            <div class="statrow"><span class="statlabel">JADWAL PM</span><span class="staticon" style="color:var(--emerald)">◈</span></div>
+            <div class="statnum" id="statTotalPM">0</div>
+            <div class="statfoot">Terdaftar di sistem</div>
+          </div>
+          <div class="stat" style="--accent: #f43f5e">
+            <div class="statrow"><span class="statlabel">OVERDUE</span><span class="staticon" style="color:var(--rose)">!</span></div>
+            <div class="statnum" id="statOverdue" style="color:#fb7185">0</div>
+            <div class="statfoot">Jadwal terlewat</div>
+          </div>
+          <div class="stat" style="--accent: #f59e0b">
+            <div class="statrow"><span class="statlabel">OPEN WORK ORDER</span><span class="staticon" style="color:var(--amber)">⚡</span></div>
+            <div class="statnum" id="statOpenWO">0</div>
+            <div class="statfoot">Menunggu dikerjakan</div>
+          </div>
+        </div>
+
+        <div class="panels">
+          <div class="panel">
+            <div class="panelhead"><h3>Grafik Kinerja PM Selesai vs Target</h3><span class="muted" style="font:10px var(--font-mono)">REALTIME</span></div>
+            <div class="panelbody">
+              <div class="chart" id="chartBars"></div>
+              <div style="display:flex;gap:14px;font-size:10.5px;color:var(--text-muted);margin-top:10px">
+                <span><i style="display:inline-block;width:7px;height:7px;background:#38bdf8;border-radius:2px;margin-right:4px"></i>Selesai</span>
+                <span><i style="display:inline-block;width:7px;height:7px;background:rgba(148,163,184,0.3);border-radius:2px;margin-right:4px"></i>Total Target</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panelhead"><h3>Kondisi Aset Mesin</h3><span class="muted" style="font:10px var(--font-mono)" id="donutTotalLabel">40 UNITS</span></div>
+            <div class="panelbody">
+              <div class="donutwrap">
+                <div class="donut" id="donutRing"><div class="donut-inner" id="donutCenter">40</div></div>
+                <div class="keylist">
+                  <div class="key"><span><i style="background:#10b981"></i>Normal</span><b id="cntNormal">40</b></div>
+                  <div class="key"><span><i style="background:#f59e0b"></i>Monitoring</span><b id="cntMonitor">0</b></div>
+                  <div class="key"><span><i style="background:#f43f5e"></i>Maintenance</span><b id="cntMaint">0</b></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tablepanel">
+          <div class="panelhead"><h3>Jadwal PM Terdekat</h3><span class="rowlink" onclick="navigate('schedule')">Lihat Semua →</span></div>
+          <div class="tablewrap"><table><thead><tr><th>Kode Mesin</th><th>Nama Mesin</th><th>Area</th><th>Target PM</th><th>PIC Teknisi</th><th>Status</th></tr></thead><tbody id="upcomingRows"></tbody></table></div>
+        </div>
+      </section>
+
+      <!-- 2. DATA MESIN -->
+      <section class="section" id="machines">
+        <div class="pagehead">
+          <div><div class="eyebrow">ASET PABRIK</div><h1>Data Mesin</h1><div class="sub">Klik baris mesin untuk memperbarui jam jalan (*hour meter*) atau langsung buat tugas perawatan.</div></div>
+          <button class="btn primary" onclick="openMachineModal()">＋ Tambah Mesin</button>
+        </div>
+        <div class="split-view">
+          <div class="tablepanel">
+            <div class="toolbar">
+              <div class="filters">
+                <input class="search" id="machineSearch" placeholder="⌕ Cari mesin...">
+                <select id="areaFilter"><option value="">Semua Area</option><option>Produksi</option><option>Machining</option><option>Assembly</option><option>Utility</option><option>Packaging</option></select>
+                <select id="healthFilter"><option value="">Semua Kondisi</option><option>Normal</option><option>Monitoring</option><option>Maintenance</option></select>
+              </div>
+              <button class="btn" onclick="exportCSV('machines')">⇩ Export CSV</button>
+            </div>
+            <div class="tablewrap"><table><thead><tr><th>Kode</th><th>Nama Mesin</th><th>Area</th><th>Score</th><th>Kondisi</th><th>Aksi Cepat</th></tr></thead><tbody id="machineRows"></tbody></table></div>
+          </div>
+
+          <div class="drawer-card" id="machineDrawer">
+            <div style="font:700 9.5px var(--font-mono);color:var(--cyan);letter-spacing:1px">KELOLA MESIN TERPILIH</div>
+            <h2 id="dName" style="margin:5px 0 2px;font-size:17px;color:#fff">CNC Milling Center</h2>
+            <div id="dCode" style="font:700 11px var(--font-mono);color:var(--text-muted);margin-bottom:12px">AST-MC-001 • Machining</div>
+            <div style="background:rgba(7,11,20,0.6);border:1px solid var(--border);border-radius:9px;padding:10px;margin-bottom:12px;display:grid;gap:6px;font-size:11.5px">
+              <div style="display:flex;justify-content:space-between"><span class="muted">Line</span><b id="dLine">Line A</b></div>
+              <div style="display:flex;justify-content:space-between"><span class="muted">Maker</span><b id="dMaker">AstraTech</b></div>
+              <div style="display:flex;justify-content:space-between"><span class="muted">Hour Meter</span><b style="font-family:var(--font-mono);color:var(--cyan)" id="dHours">0 hrs</b></div>
+            </div>
+            <div style="margin-bottom:10px">
+              <label style="display:block;font:700 9.5px var(--font-mono);color:var(--text-muted);margin-bottom:4px">UPDATE JAM JALAN (HOUR METER)</label>
+              <div style="display:flex;gap:5px">
+                <input type="number" id="dHourInput" placeholder="0" style="width:100%">
+                <button class="btn" onclick="updateHourMeter()">Simpan</button>
+              </div>
+            </div>
+            <div style="margin-bottom:12px">
+              <label style="display:block;font:700 9.5px var(--font-mono);color:var(--text-muted);margin-bottom:4px">KONDISI FISIK</label>
+              <select id="dStatusSelect" onchange="updateMachineHealth()" style="width:100%">
+                <option value="Normal">Normal (Optimal)</option>
+                <option value="Monitoring">Monitoring (Waspada)</option>
+                <option value="Maintenance">Maintenance (Perbaikan)</option>
+              </select>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+              <button class="btn" style="justify-content:center" onclick="quickScheduleSelected()">+ Jadwal PM</button>
+              <button class="btn primary" style="justify-content:center" onclick="quickWoSelected()">+ Work Order</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. JADWAL PM -->
+      <section class="section" id="schedule">
+        <div class="pagehead">
+          <div><div class="eyebrow">PERENCANAAN</div><h1>Jadwal PM</h1><div class="sub">Daftar agenda perawatan berkala. Klik tombol "Buat WO" untuk langsung meneruskan jadwal ke teknisi.</div></div>
+          <button class="btn primary" onclick="openScheduleModal()">＋ Input Jadwal PM</button>
+        </div>
+        <div class="tablepanel">
+          <div class="toolbar"><div class="filters"><input class="search" id="scheduleSearch" placeholder="⌕ Cari jadwal..."><select id="scheduleStatus"><option value="">Semua Status</option><option>Scheduled</option><option>Due Soon</option><option>Overdue</option><option>Completed</option></select></div><button class="btn" onclick="exportCSV('schedule')">⇩ Export CSV</button></div>
+          <div class="tablewrap"><table><thead><tr><th>Kode Mesin</th><th>Nama Mesin</th><th>Interval</th><th>Target PM</th><th>PIC Teknisi</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="scheduleRows"></tbody></table></div>
+        </div>
+      </section>
+
+      <!-- 4. WORK ORDERS (LAYOUT DIRAPIKAN LEBIH BERSIH & FOKUS) -->
+      <section class="section" id="workorders">
+        <div class="pagehead">
+          <div><div class="eyebrow">EKSEKUSI LAPANGAN</div><h1>Work Orders</h1><div class="sub">Daftar surat perintah kerja aktif. Teknisi dapat langsung menyelesaikan tugas dari tabel ini.</div></div>
+          <div class="actions">
+            <span class="pill amber" id="woBadge">0 OPEN</span>
+            <button class="btn primary" onclick="openNewWoModal()">＋ Buat Work Order</button>
+          </div>
+        </div>
+        <div class="tablepanel">
+          <div class="toolbar"><div class="filters"><input class="search" id="woSearch" placeholder="⌕ Cari Work Order..."></div></div>
+          <div class="tablewrap"><table><thead><tr><th>No. WO</th><th>Mesin</th><th>Uraian Pekerjaan</th><th>Prioritas</th><th>PIC Teknisi</th><th>Due Date</th><th>Status</th><th>Tindakan Eksekusi</th></tr></thead><tbody id="woRows"></tbody></table></div>
+        </div>
+      </section>
+
+      <!-- 5. RIWAYAT -->
+      <section class="section" id="history">
+        <div class="pagehead"><div><div class="eyebrow">ARSIP LAPORAN</div><h1>Riwayat & Berita Acara</h1><div class="sub">Arsip laporan pekerjaan yang telah selesai beserta dokumen cetak Berita Acara.</div></div><button class="btn" onclick="exportCSV('history')">⇩ Export CSV</button></div>
+        <div class="tablepanel">
+          <div class="tablewrap"><table><thead><tr><th>Tanggal</th><th>Kode Mesin</th><th>Nama Mesin</th><th>Aktivitas</th><th>Analisis (RCA)</th><th>Part Dipakai</th><th>PIC</th><th>Dokumen BA</th></tr></thead><tbody id="historyRows"></tbody></table></div>
+        </div>
+      </section>
+
+      <!-- 6. SPARE PARTS -->
+      <section class="section" id="spareparts">
+        <div class="pagehead">
+          <div><div class="eyebrow">INVENTORI</div><h1>Master Spare Parts</h1><div class="sub">Kelola stok komponen dan suku cadang pabrik.</div></div>
+          <div class="actions">
+            <button class="btn" onclick="openPartModal()">＋ Tambah Part</button>
+            <button class="btn primary" onclick="openStockInModal()">📥 Input Stok Masuk</button>
+          </div>
+        </div>
+        <div class="tablepanel">
+          <div class="toolbar"><div class="filters"><input class="search" id="partSearch" placeholder="⌕ Cari part..."><select id="partCategory"><option value="">Semua Kategori</option><option>Bearing</option><option>Belt</option><option>Electrical</option><option>Pneumatic</option><option>Hydraulic</option><option>Lubricant</option><option>Filter</option><option>Fastener</option></select></div><button class="btn" onclick="exportCSV('parts')">⇩ Export CSV</button></div>
+          <div class="tablewrap"><table><thead><tr><th>Part Number</th><th>Deskripsi</th><th>Kategori</th><th>Stok</th><th>Min</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="partRows"></tbody></table></div>
+        </div>
+      </section>
+
+      <!-- 7. REPORTS -->
+      <section class="section" id="reports">
+        <div class="pagehead"><div><div class="eyebrow">ANALITIK</div><h1>Analisis & KPI</h1><div class="sub">Metrik keandalan dan grafik Pareto penyebab gangguan berdasarkan data riwayat.</div></div></div>
+        <div class="stats">
+          <div class="stat" style="--accent:#10b981"><div class="statlabel">PM COMPLIANCE</div><div class="statnum" id="kpiCompliance">0%</div><div class="statfoot">Ketepatan jadwal</div></div>
+          <div class="stat" style="--accent:#38bdf8"><div class="statlabel">AVG DURASI</div><div class="statnum" id="kpiMttr">0h</div><div class="statfoot">Waktu perbaikan</div></div>
+          <div class="stat" style="--accent:#818cf8"><div class="statlabel">SELESAI</div><div class="statnum" id="kpiCompleted">0</div><div class="statfoot">Total laporan BA</div></div>
+          <div class="stat" style="--accent:#f59e0b"><div class="statlabel">STOK KRITIS</div><div class="statnum" id="statPrCount">0</div><div class="statfoot">Di bawah batas minimum</div></div>
+        </div>
+        <div class="panel">
+          <div class="panelhead"><h3>Pareto Root Cause Analysis</h3><span class="muted" style="font:10px var(--font-mono)">AUTO</span></div>
+          <div class="panelbody" id="paretoContainer"></div>
+        </div>
+      </section>
+
+      <!-- 8. USERS / PIC -->
+      <section class="section" id="users">
+        <div class="pagehead">
+          <div><div class="eyebrow">PERSONEL</div><h1>Daftar PIC / Teknisi</h1><div class="sub">Kelola daftar nama teknisi yang bertugas.</div></div>
+          <button class="btn primary" onclick="openPicModal()">＋ Tambah PIC</button>
+        </div>
+        <div class="tablepanel"><div class="tablewrap"><table><thead><tr><th>Nama PIC</th><th>Jabatan</th><th>Area</th><th>Keterangan</th><th>Aksi</th></tr></thead><tbody id="picRows"></tbody></table></div></div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<datalist id="picOptions"></datalist>
+
+<!-- MODAL TAMBAH MESIN -->
+<div class="modalback" id="machineModal"><div class="modal"><div class="modalhead"><b>Tambah Master Mesin Baru</b><button class="btn sm" onclick="closeModal('machineModal')">✕</button></div><div class="modalbody"><div class="formgrid"><div class="field"><label>Kode Mesin</label><input id="fCode" placeholder="AST-MC-041"></div><div class="field"><label>Nama Mesin</label><input id="fName" placeholder="Nama mesin"></div><div class="field"><label>Area</label><select id="fArea"><option>Produksi</option><option>Machining</option><option>Assembly</option><option>Utility</option><option>Packaging</option></select></div><div class="field"><label>Line</label><input id="fLine" placeholder="Line A"></div><div class="field"><label>Maker</label><input id="fMaker" placeholder="Manufacturer"></div><div class="field"><label>Tahun</label><input id="fYear" type="number" value="2026"></div></div></div><div class="modalfoot"><button class="btn" onclick="closeModal('machineModal')">Batal</button><button class="btn primary" onclick="saveMachine()">Simpan</button></div></div></div>
+
+<!-- MODAL JADWAL PM -->
+<div class="modalback" id="scheduleModal"><div class="modal"><div class="modalhead"><b>Buat Jadwal Preventive Maintenance</b><button class="btn sm" onclick="closeModal('scheduleModal')">✕</button></div><div class="modalbody"><div class="formgrid">
+  <div class="field"><label>Pilih Mesin</label><select id="sMachine"></select></div>
+  <div class="field"><label>Interval</label><select id="sInterval"><option>1 Minggu</option><option>1 Bulan</option><option>3 Bulan</option><option>6 Bulan</option><option>1 Tahun</option></select></div>
+  <div class="field"><label>Tanggal Target</label><input id="sNextDate" type="date"></div>
+  <div class="field"><label>Nama PIC Teknisi</label><input id="sPic" list="picOptions" placeholder="Ketik nama PIC..."></div>
+</div></div><div class="modalfoot"><button class="btn" onclick="closeModal('scheduleModal')">Batal</button><button class="btn primary" onclick="saveSchedule()">Simpan Jadwal</button></div></div></div>
+
+<!-- MODAL WORK ORDER -->
+<div class="modalback" id="newWoModal"><div class="modal"><div class="modalhead"><b>Buat Work Order Baru</b><button class="btn sm" onclick="closeModal('newWoModal')">✕</button></div><div class="modalbody">
+  <div class="formgrid" style="margin-bottom:10px">
+    <div class="field"><label>Pilih Mesin</label><select id="nwMachine"></select></div>
+    <div class="field"><label>Prioritas</label><select id="nwPriority"><option value="High">High</option><option value="Normal" selected>Normal</option><option value="Low">Low</option></select></div>
+  </div>
+  <div class="field" style="margin-bottom:10px"><label>Uraian Tugas / Perbaikan</label><input id="nwTask" placeholder="Contoh: Overhaul berkala & ganti filter..."></div>
+  <div class="formgrid">
+    <div class="field"><label>Nama PIC Teknisi</label><input id="nwPic" list="picOptions" placeholder="Ketik nama PIC..."></div>
+    <div class="field"><label>Target Selesai (Due Date)</label><input id="nwDue" type="date"></div>
+  </div>
+</div><div class="modalfoot"><button class="btn" onclick="closeModal('newWoModal')">Batal</button><button class="btn primary" onclick="saveNewWo()">Terbitkan WO</button></div></div></div>
+
+<!-- MODAL STOK MASUK -->
+<div class="modalback" id="stockInModal"><div class="modal"><div class="modalhead"><b>Input Stok Spare Part Masuk</b><button class="btn sm" onclick="closeModal('stockInModal')">✕</button></div><div class="modalbody">
+  <div class="field" style="margin-bottom:10px"><label>Pilih Part</label><select id="stPartSelect"></select></div>
+  <div class="formgrid">
+    <div class="field"><label>Jumlah Masuk</label><input id="stQtyIn" type="number" min="1" value="10"></div>
+    <div class="field"><label>Batas Minimum</label><input id="stMinSet" type="number" min="0" value="5"></div>
+  </div>
+</div><div class="modalfoot"><button class="btn" onclick="closeModal('stockInModal')">Batal</button><button class="btn primary" onclick="saveStockIn()">Simpan Stok</button></div></div></div>
+
+<!-- MODAL TAMBAH PART -->
+<div class="modalback" id="partModal"><div class="modal"><div class="modalhead"><b>Tambah Spare Part Baru</b><button class="btn sm" onclick="closeModal('partModal')">✕</button></div><div class="modalbody"><div class="formgrid">
+  <div class="field"><label>Part Number</label><input id="npCode" placeholder="SPX-07500"></div>
+  <div class="field"><label>Kategori</label><select id="npCat"><option>Bearing</option><option>Belt</option><option>Electrical</option><option>Pneumatic</option><option>Hydraulic</option><option>Lubricant</option><option>Filter</option><option>Fastener</option></select></div>
+  <div class="field"><label>Deskripsi</label><input id="npDesc" placeholder="Nama spare part"></div>
+  <div class="field"><label>Satuan</label><input id="npUnit" value="pcs"></div>
+  <div class="field"><label>Stok Awal</label><input id="npStock" type="number" value="0"></div>
+  <div class="field"><label>Min Stok</label><input id="npMin" type="number" value="5"></div>
+</div></div><div class="modalfoot"><button class="btn" onclick="closeModal('partModal')">Batal</button><button class="btn primary" onclick="saveNewPart()">Simpan Part</button></div></div></div>
+
+<!-- MODAL PIC -->
+<div class="modalback" id="picModal"><div class="modal"><div class="modalhead"><b>Tambah Data PIC</b><button class="btn sm" onclick="closeModal('picModal')">✕</button></div><div class="modalbody"><div class="formgrid">
+  <div class="field"><label>Nama PIC</label><input id="picName" placeholder="Nama lengkap"></div>
+  <div class="field"><label>Jabatan</label><select id="picRole"><option>Teknisi</option><option>Supervisor</option><option>Planner</option></select></div>
+  <div class="field"><label>Area</label><input id="picArea" placeholder="Area tugas"></div>
+  <div class="field"><label>Keterangan</label><input id="picNote" placeholder="Shift / Kontak"></div>
+</div></div><div class="modalfoot"><button class="btn" onclick="closeModal('picModal')">Batal</button><button class="btn primary" onclick="saveNewPic()">Simpan PIC</button></div></div></div>
+
+<!-- MODAL EKSEKUSI WORK ORDER (LAYOUT FORM DISEMPURNAKAN) -->
+<div class="modalback" id="woModal"><div class="modal"><div class="modalhead"><b id="woModalTitle">Selesaikan Work Order</b><button class="btn sm" onclick="closeModal('woModal')">✕</button></div><div class="modalbody">
+<input type="hidden" id="activeWoIndex">
+<div style="display:grid;gap:12px">
+  <div class="formgrid">
+    <div class="field"><label>Analisis Penyebab (RCA)</label><select id="woRca"><option value="Routine Preventive">Routine Preventive (Normal)</option><option value="Mechanical Wear">Mechanical Wear (Keausan)</option><option value="Lubrication Issue">Lubrication Issue (Pelumasan)</option><option value="Electrical / Sensor">Electrical / Sensor Fault</option><option value="Pneumatic / Hydraulic">Pneumatic / Hydraulic Leak</option></select></div>
+    <div class="field"><label>Kondisi Mesin Setelah Selesai</label><select id="woPostHealth"><option value="Normal">Normal (Optimal)</option><option value="Monitoring">Monitoring (Waspada)</option></select></div>
+  </div>
+  <div class="formgrid">
+    <div class="field"><label>Spare Part Terpakai (Opsional)</label><select id="woPartSelect"></select></div>
+    <div class="field"><label>Jumlah & Durasi Perbaikan</label><div style="display:flex;gap:5px"><input id="woPartQty" type="number" min="0" value="0" placeholder="Qty" style="width:50%"><input id="woDuration" type="number" step="0.5" value="1" placeholder="Jam" style="width:50%"></div></div>
+  </div>
+  <div class="field"><label>Catatan / Uraian Tindakan Perbaikan</label><textarea id="woNotes" rows="2" placeholder="Tuliskan tindakan yang sudah dilakukan..."></textarea></div>
+  <div class="field"><label>Foto Bukti Pekerjaan (Opsional)</label><input type="file" id="woPhoto" accept="image/*" onchange="previewPhoto(event)"><img id="woPhotoPreview" style="display:none;max-height:85px;margin-top:6px;border-radius:6px;border:1px solid var(--cyan)"></div>
+  <div class="field"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px"><label style="margin:0">Tanda Tangan Digital PIC</label><span class="rowlink" style="font-size:10.5px" onclick="clearSig()">Reset TTD</span></div><canvas id="sigCanvas" class="sig-pad" width="460" height="95"></canvas></div>
+</div>
+</div><div class="modalfoot"><button class="btn" onclick="closeModal('woModal')">Batal</button><button class="btn primary" onclick="submitWorkOrder()">✓ Validasi & Selesaikan Work Order</button></div></div></div>
+
+<!-- MODAL BERITA ACARA -->
+<div class="modalback" id="reportModal"><div class="modal"><div class="modalhead"><b id="docModalTitle">Berita Acara</b><button class="btn sm no-print" onclick="closeModal('reportModal')">✕</button></div><div class="modalbody" id="reportPrintArea"></div><div class="modalfoot no-print"><button class="btn" onclick="closeModal('reportModal')">Tutup</button><button class="btn primary" onclick="window.print()">🖨 Cetak PDF</button></div></div></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'NEXUS_PM_CLEAN_V2';
+const areas=['Produksi','Machining','Assembly','Utility','Packaging'];
+const names=['CNC Milling Center','Hydraulic Press','Air Compressor','Belt Conveyor','Surface Grinder','CNC Turning Lathe','Injection Molding','Industrial Mixer','Roll Forming Machine','Laser Cutting Unit','Welding Robot','Cooling Tower Pump','Vacuum Pump','Palletizer','Centrifugal Fan','Gear Hobbing Machine','Drill Press','Shot Blasting Unit','Packaging Sealer','Chiller Unit','Dust Collector','Power Press','Vertical Band Saw','Overhead Crane','Screw Feeder','Industrial Oven','Water Treatment Pump','Labeling Machine','Robotic Arm','Automatic Feeder','Slotting Machine','Pipe Bending Machine','Hydraulic Shearing','Air Dryer','Cooling Conveyor','Cylindrical Grinder','Thread Rolling Machine','Plastic Crusher','Diesel Generator','Rotary Compressor'];
+const makers=['AstraTech','Nusantara Machinery','Kinetix Industrial','Prima Engineering','Orion Works','Mekar Teknik'];
+const pnames=[['Bearing','Deep Groove Ball Bearing 6205-2RS','pcs'],['Bearing','Tapered Roller Bearing 30206','pcs'],['Belt','Timing Belt HTD 8M-960','pcs'],['Belt','V-Belt B-72 Wrapped','pcs'],['Electrical','Proximity Sensor M18 PNP','pcs'],['Electrical','Contactor 3P 32A Coil 220V','pcs'],['Pneumatic','Solenoid Valve 5/2 Way 1/4','pcs'],['Pneumatic','Air Filter Regulator 1/2','pcs'],['Hydraulic','Hydraulic Seal Kit 40mm','set'],['Hydraulic','Pressure Gauge 0-160 bar','pcs'],['Lubricant','Industrial Grease EP2 1kg','kg'],['Filter','Air Filter Element 5 micron','pcs'],['Fastener','Hex Bolt M12 x 50 Grade 8.8','pcs']];
+
+function getDefaultState() {
+  return {
+    machines: names.map((n,i)=>({
+      code:'AST-MC-'+String(i+1).padStart(3,'0'),
+      name:n, area:areas[i%5], line:['Line A','Line B','Line C','Line D'][i%4],
+      maker:makers[i%6], year:2017+(i%9),
+      health:'Normal', score:100, hoursNum:0
+    })),
+    parts: Array.from({length:50},(_,i)=>{
+      let x=pnames[i%pnames.length];
+      return {code:'SPX-'+String(7100+i*7).padStart(5,'0'),desc:x[1]+(i>=pnames.length?' - Type '+String.fromCharCode(65+i%5):''),cat:x[0],stock:0,min:5,unit:x[2]};
+    }),
+    schedules: [],
+    workorders: [],
+    history: [],
+    pics: []
+  };
+}
+
+let db = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null') || getDefaultState();
+let selectedCode = db.machines[0]?.code || '';
+
+function saveDB() { localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); }
+function resetAllData() {
+  if (!confirm('Reset semua data ke kondisi awal?')) return;
+  db = getDefaultState(); selectedCode = db.machines[0].code;
+  saveDB(); refreshAll(); toast('Data berhasil di-reset');
+}
+function exportBackup() {
+  let blob = new Blob([JSON.stringify(db, null, 2)], {type: 'application/json'});
+  let a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'nexus-pm-backup.json'; a.click();
+}
+function importBackup(e) {
+  let file = e.target.files[0]; if (!file) return;
+  let reader = new FileReader();
+  reader.onload = ev => {
+    try { db = JSON.parse(ev.target.result); saveDB(); refreshAll(); toast('Data dipulihkan!'); }
+    catch { toast('File tidak valid'); }
+  };
+  reader.readAsText(file);
+}
+
+function todayStr() { return new Date().toISOString().split('T')[0]; }
+function statusPill(s){let c={'Normal':'green','Monitoring':'amber','Maintenance':'red','Overdue':'red','Due Soon':'amber','Scheduled':'blue','Completed':'green','Open':'amber','In Progress':'blue','Low':'gray','High':'red'}[s]||'gray';return `<span class="pill ${c}">${s}</span>`}
+
+function selectMachine(code){
+  selectedCode = code;
+  let m = db.machines.find(x=>x.code===code); if(!m) return;
+  document.getElementById('dName').textContent = m.name;
+  document.getElementById('dCode').textContent = m.code + ' • ' + m.area;
+  document.getElementById('dLine').textContent = m.line;
+  document.getElementById('dMaker').textContent = m.maker;
+  document.getElementById('dHours').textContent = m.hoursNum.toLocaleString() + ' hrs';
+  document.getElementById('dHourInput').value = m.hoursNum;
+  document.getElementById('dStatusSelect').value = m.health;
+  renderMachines();
+}
+
+function updateHourMeter() {
+  let m = db.machines.find(x => x.code === selectedCode);
+  let val = +document.getElementById('dHourInput').value;
+  if (!m || isNaN(val) || val < 0) return;
+  m.hoursNum = val; saveDB(); selectMachine(selectedCode); toast('Jam jalan disimpan');
+}
+
+function updateMachineHealth() {
+  let m = db.machines.find(x => x.code === selectedCode);
+  if (!m) return;
+  let st = document.getElementById('dStatusSelect').value;
+  m.health = st; m.score = st==='Normal'?100:st==='Monitoring'?75:40;
+  saveDB(); selectMachine(selectedCode); toast('Kondisi mesin diperbarui');
+}
+
+// AKSI CEPAT DARI PANEL MESIN
+function quickScheduleSelected() {
+  let m = db.machines.find(x=>x.code===selectedCode); if(!m) return;
+  openScheduleModal();
+  let sel = document.getElementById('sMachine');
+  for(let i=0; i<sel.options.length; i++) {
+    if(sel.options[i].text.includes(m.code)) { sel.selectedIndex = i; break; }
+  }
+}
+function quickWoSelected() {
+  let m = db.machines.find(x=>x.code===selectedCode); if(!m) return;
+  openNewWoModal();
+  let sel = document.getElementById('nwMachine');
+  for(let i=0; i<sel.options.length; i++) {
+    if(sel.options[i].text.includes(m.code)) { sel.selectedIndex = i; break; }
+  }
+}
+
+function renderMachines(){
+  let q=(document.getElementById('machineSearch')?.value||'').toLowerCase(),a=document.getElementById('areaFilter')?.value||'',h=document.getElementById('healthFilter')?.value||'';
+  let rows=db.machines.filter(m=>(m.code+m.name).toLowerCase().includes(q)&&(!a||m.area===a)&&(!h||m.health===h));
+  document.getElementById('machineRows').innerHTML=rows.map(m=>{
+    let col = m.score>=85?'#10b981':m.score>=65?'#f59e0b':'#f43f5e';
+    return `<tr class="${m.code===selectedCode?'selected-row':''}" onclick="selectMachine('${m.code}')">
+      <td class="machine">${m.code}</td>
+      <td><b>${m.name}</b></td>
+      <td>${m.area}</td>
+      <td><div class="hbar"><div class="hbar-fill" style="width:${m.score}%;background:${col}"></div></div>${m.score}%</td>
+      <td>${statusPill(m.health)}</td>
+      <td><span class="rowlink" onclick="event.stopPropagation();quickWoSelected()">+ WO</span></td>
+    </tr>`;
+  }).join('')||'<tr><td colspan="6" class="empty-state">Mesin tidak ditemukan</td></tr>';
+
+  let total = db.machines.length || 1;
+  let nNorm = db.machines.filter(m=>m.health==='Normal').length;
+  let nMon = db.machines.filter(m=>m.health==='Monitoring').length;
+  let nMaint = db.machines.filter(m=>m.health==='Maintenance').length;
+
+  document.getElementById('statMachines').textContent = db.machines.length;
+  document.getElementById('donutTotalLabel').textContent = db.machines.length + ' UNITS';
+  document.getElementById('donutCenter').textContent = db.machines.length;
+  document.getElementById('cntNormal').textContent = nNorm;
+  document.getElementById('cntMonitor').textContent = nMon;
+  document.getElementById('cntMaint').textContent = nMaint;
+
+  let p1 = (nNorm/total)*100, p2 = p1 + (nMon/total)*100;
+  document.getElementById('donutRing').style.background = `conic-gradient(#10b981 0 ${p1}%, #f59e0b ${p1}% ${p2}%, #f43f5e ${p2}% 100%)`;
+}
+
+function renderSchedule(){
+  let q=(document.getElementById('scheduleSearch')?.value||'').toLowerCase(),s=document.getElementById('scheduleStatus')?.value||'';
+  let rows=db.schedules.filter(x=>(x.machineName+x.machineCode+x.pic).toLowerCase().includes(q)&&(!s||x.status===s));
+  document.getElementById('scheduleRows').innerHTML=rows.map((x, idx)=>`<tr>
+    <td class="machine">${x.machineCode}</td>
+    <td>${x.machineName}</td>
+    <td>${x.interval}</td>
+    <td><b>${x.next}</b></td>
+    <td>${x.pic}</td>
+    <td>${statusPill(x.status)}</td>
+    <td>${x.status!=='Completed'?`<span class="rowlink" onclick="convertScheduleToWo(${idx})">→ Buat WO</span>`:'<span class="muted">Selesai</span>'}</td>
+  </tr>`).join('') || '<tr><td colspan="7" class="empty-state">Belum ada jadwal PM. Klik <b>＋ Input Jadwal PM</b>.</td></tr>';
+  document.getElementById('statTotalPM').textContent = db.schedules.length;
+  document.getElementById('statOverdue').textContent = db.schedules.filter(x=>x.status==='Overdue').length;
+}
+
+function convertScheduleToWo(idx) {
+  let s = db.schedules[idx];
+  let woNum = 'WO-' + Math.floor(1000 + Math.random()*8999);
+  db.workorders.unshift({
+    wo: woNum, code: s.machineCode, name: s.machineName,
+    task: `PM Rutin (${s.interval})`,
+    priority: s.status==='Overdue'?'High':'Normal',
+    pic: s.pic, due: s.next, status: 'Open', schedIdx: idx
+  });
+  s.status = 'In Progress';
+  saveDB(); refreshAll(); toast(`WO ${woNum} berhasil dibuat!`);
+}
+
+function renderParts(){
+  let q=(document.getElementById('partSearch')?.value||'').toLowerCase(),c=document.getElementById('partCategory')?.value||'';
+  let rows=db.parts.filter(p=>(p.code+p.desc).toLowerCase().includes(q)&&(!c||p.cat===c));
+  document.getElementById('partRows').innerHTML=rows.map(p=>{
+    let isLow = p.stock <= p.min;
+    return `<tr>
+      <td class="machine">${p.code}</td>
+      <td>${p.desc}</td>
+      <td>${p.cat}</td>
+      <td><b>${p.stock} ${p.unit}</b></td>
+      <td>${p.min}</td>
+      <td>${statusPill(p.stock===0?'Maintenance':isLow?'Monitoring':'Normal')}</td>
+      <td><span class="rowlink" onclick="openStockInModal('${p.code}')">+ Stok</span></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('statPrCount').textContent = db.parts.filter(p=>p.stock<=p.min).length;
+}
+
+function renderOthers(){
+  document.getElementById('upcomingRows').innerHTML=db.schedules.slice(0,5).map(x=>`<tr><td class="machine">${x.machineCode}</td><td>${x.machineName}</td><td>${x.area||'-'}</td><td>${x.next}</td><td><b>${x.pic}</b></td><td>${statusPill(x.status)}</td></tr>`).join('') || '<tr><td colspan="6" class="empty-state">Belum ada jadwal.</td></tr>';
+  
+  let wq = (document.getElementById('woSearch')?.value||'').toLowerCase();
+  let wRows = db.workorders.filter(w=>(w.wo+w.code+w.name+w.pic+w.task).toLowerCase().includes(wq));
+  document.getElementById('woRows').innerHTML=wRows.map((w,idx)=>`<tr>
+    <td class="machine">${w.wo}</td>
+    <td>${w.code} — ${w.name}</td>
+    <td>${w.task}</td>
+    <td>${statusPill(w.priority)}</td>
+    <td><b>${w.pic}</b></td>
+    <td>${w.due}</td>
+    <td>${statusPill(w.status)}</td>
+    <td>${w.status!=='Completed'?`<button class="btn sm primary" onclick="openWoModal(${idx})">✓ Selesaikan</button>`:'<span class="muted">Selesai</span>'}</td>
+  </tr>`).join('') || '<tr><td colspan="8" class="empty-state">Belum ada Work Order. Klik <b>＋ Buat Work Order</b>.</td></tr>';
+  
+  let openCount=db.workorders.filter(w=>w.status!=='Completed').length;
+  document.getElementById('statOpenWO').textContent=openCount;
+  document.getElementById('woBadge').textContent=openCount+' OPEN';
+
+  document.getElementById('historyRows').innerHTML=db.history.map((h,idx)=>`<tr><td>${h.date}</td><td class="machine">${h.code}</td><td>${h.name}</td><td>${h.notes}</td><td><span class="pill blue">${h.rca}</span></td><td>${h.partUsed}</td><td><b>${h.pic}</b></td><td><span class="rowlink" onclick="openReport(${idx})">🖨 Cetak BA</span></td></tr>`).join('') || '<tr><td colspan="8" class="empty-state">Belum ada riwayat pekerjaan selesai.</td></tr>';
+
+  document.getElementById('picRows').innerHTML=db.pics.map((p,idx)=>`<tr><td><b>${p.name}</b></td><td><span class="pill blue">${p.role}</span></td><td>${p.area}</td><td>${p.note}</td><td><span class="rowlink" style="color:#fb7185" onclick="deletePic(${idx})">Hapus</span></td></tr>`).join('') || '<tr><td colspan="5" class="empty-state">Belum ada PIC terdaftar.</td></tr>';
+  document.getElementById('picOptions').innerHTML = db.pics.map(p=>`<option value="${p.name}">`).join('');
+
+  renderChartsAndPareto();
+}
+
+function renderChartsAndPareto() {
+  let totalSched = db.schedules.length, completedCount = db.history.length;
+  let compPct = totalSched > 0 ? Math.min(100, Math.round((completedCount / totalSched) * 100)) : (completedCount > 0 ? 100 : 0);
+  document.getElementById('kpiCompliance').textContent = compPct + '%';
+  document.getElementById('kpiCompleted').textContent = completedCount;
+  let totalHours = db.history.reduce((acc, h) => acc + (parseFloat(h.dur) || 0), 0);
+  document.getElementById('kpiMttr').textContent = (completedCount > 0 ? (totalHours / completedCount).toFixed(1) : '0') + 'h';
+
+  let maxBar = Math.max(totalSched, completedCount, 5);
+  document.getElementById('chartBars').innerHTML = [
+    ['SELESAI', completedCount, totalSched],
+    ['OPEN WO', db.workorders.filter(w=>w.status!=='Completed').length, totalSched]
+  ].map(x=>`<div class="barcol"><div class="barpair"><div class="bar" style="height:${(x[1]/maxBar)*100}%"></div><div class="bar alt" style="height:${(x[2]/maxBar)*100}%"></div></div><span class="barlabel">${x[0]}</span></div>`).join('');
+
+  let counts = {};
+  db.history.forEach(h => { counts[h.rca] = (counts[h.rca]||0) + 1; });
+  let sorted = Object.entries(counts).sort((a,b) => b[1] - a[1]);
+  const colors = ['#38bdf8', '#818cf8', '#f59e0b', '#10b981', '#f43f5e'];
+  document.getElementById('paretoContainer').innerHTML = sorted.length ? sorted.map(([label, val], i) => {
+    let pct = Math.round((val / completedCount) * 100);
+    return `<div class="pareto-row"><div class="pareto-top"><b>${label}</b><span style="font-family:var(--font-mono);color:var(--cyan)">${val} (${pct}%)</span></div><div class="pareto-track"><div class="pareto-fill" style="width:${pct}%;background:${colors[i%colors.length]}"></div></div></div>`;
+  }).join('') : '<div class="empty-state">Selesaikan Work Order untuk melihat analisis Pareto.</div>';
+}
+
+function renderNotifications(){
+  let alerts=[];
+  db.schedules.filter(s=>s.status==='Overdue').forEach(s=>alerts.push(`<div class="notif-item"><b style="color:#fb7185">[OVERDUE]</b> ${s.machineCode} (${s.pic})</div>`));
+  document.getElementById('notifCount').textContent=alerts.length;
+  document.getElementById('notifList').innerHTML=alerts.length ? alerts.join('') : '<div class="notif-item">Tidak ada peringatan.</div>';
+}
+function toggleNotif(){document.getElementById('notifPop').classList.toggle('show')}
+
+// MODAL HANDLERS
+function openScheduleModal() {
+  document.getElementById('sMachine').innerHTML = db.machines.map((m,i)=>`<option value="${i}">${m.code} — ${m.name}</option>`).join('');
+  document.getElementById('sNextDate').value = todayStr();
+  document.getElementById('scheduleModal').classList.add('show');
+}
+function saveSchedule() {
+  let m = db.machines[+document.getElementById('sMachine').value];
+  let pic = document.getElementById('sPic').value.trim() || 'Teknisi Umum';
+  autoRegisterPic(pic);
+  db.schedules.unshift({ machineCode: m.code, machineName: m.name, area: m.area, interval: document.getElementById('sInterval').value, next: document.getElementById('sNextDate').value || todayStr(), pic, status: 'Scheduled' });
+  saveDB(); closeModal('scheduleModal'); refreshAll(); toast('Jadwal PM disimpan');
+}
+
+function openNewWoModal() {
+  document.getElementById('nwMachine').innerHTML = db.machines.map((m,i)=>`<option value="${i}">${m.code} — ${m.name}</option>`).join('');
+  document.getElementById('nwTask').value = '';
+  document.getElementById('nwDue').value = todayStr();
+  document.getElementById('newWoModal').classList.add('show');
+}
+function saveNewWo() {
+  let m = db.machines[+document.getElementById('nwMachine').value];
+  let task = document.getElementById('nwTask').value.trim();
+  let pic = document.getElementById('nwPic').value.trim() || 'Teknisi Umum';
+  if (!task) { toast('Uraian tugas wajib diisi'); return; }
+  autoRegisterPic(pic);
+  let woNum = 'WO-' + Math.floor(1000 + Math.random()*8999);
+  db.workorders.unshift({ wo: woNum, code: m.code, name: m.name, task, priority: document.getElementById('nwPriority').value, pic, due: document.getElementById('nwDue').value || todayStr(), status: 'Open' });
+  saveDB(); closeModal('newWoModal'); refreshAll(); toast(`WO ${woNum} diterbitkan`);
+}
+
+function autoRegisterPic(name) {
+  if (!db.pics.some(p => p.name.toLowerCase() === name.toLowerCase())) {
+    db.pics.push({name, role: 'Teknisi', area: 'General', note: 'Auto'});
+  }
+}
+
+function openPicModal() { document.getElementById('picModal').classList.add('show'); }
+function saveNewPic() {
+  let name = document.getElementById('picName').value.trim();
+  if (!name) { toast('Nama wajib diisi'); return; }
+  db.pics.push({ name, role: document.getElementById('picRole').value, area: document.getElementById('picArea').value || 'All', note: document.getElementById('picNote').value || '-' });
+  saveDB(); closeModal('picModal'); refreshAll(); toast('PIC ditambahkan');
+}
+function deletePic(idx) { db.pics.splice(idx, 1); saveDB(); refreshAll(); toast('PIC dihapus'); }
+
+function openStockInModal(preCode) {
+  document.getElementById('stPartSelect').innerHTML = db.parts.map(p=>`<option value="${p.code}">${p.code} — ${p.desc} (Stok: ${p.stock})</option>`).join('');
+  if (preCode) document.getElementById('stPartSelect').value = preCode;
+  document.getElementById('stockInModal').classList.add('show');
+}
+function saveStockIn() {
+  let code = document.getElementById('stPartSelect').value;
+  let qty = +document.getElementById('stQtyIn').value || 0;
+  let p = db.parts.find(x => x.code === code);
+  if (p) p.stock += qty;
+  saveDB(); closeModal('stockInModal'); refreshAll(); toast('Stok diperbarui');
+}
+
+function openPartModal() { document.getElementById('partModal').classList.add('show'); }
+function saveNewPart() {
+  let code = document.getElementById('npCode').value.trim(), desc = document.getElementById('npDesc').value.trim();
+  if (!code || !desc) { toast('Data tidak lengkap'); return; }
+  db.parts.unshift({ code, desc, cat: document.getElementById('npCat').value, stock: +document.getElementById('npStock').value||0, min: +document.getElementById('npMin').value||5, unit: document.getElementById('npUnit').value||'pcs' });
+  saveDB(); closeModal('partModal'); refreshAll(); toast('Part ditambahkan');
+}
+
+let sigDataUrl='', photoDataUrl='';
+function openWoModal(idx){
+  let w = db.workorders[idx];
+  document.getElementById('activeWoIndex').value = idx;
+  document.getElementById('woModalTitle').textContent = `Selesaikan ${w.wo} — ${w.name}`;
+  document.getElementById('woPartSelect').innerHTML = `<option value="">-- Tanpa Part --</option>` + db.parts.filter(p=>p.stock>0).map(p=>`<option value="${p.code}">${p.code} - ${p.desc} (Stok: ${p.stock})</option>`).join('');
+  document.getElementById('woPartQty').value = 0;
+  document.getElementById('woNotes').value = '';
+  document.getElementById('woPhoto').value = '';
+  document.getElementById('woPhotoPreview').style.display = 'none';
+  photoDataUrl = ''; clearSig();
+  document.getElementById('woModal').classList.add('show');
+}
+function previewPhoto(e){
+  let file = e.target.files[0]; if (!file) return;
+  let reader = new FileReader();
+  reader.onload = ev => { photoDataUrl = ev.target.result; let img = document.getElementById('woPhotoPreview'); img.src = photoDataUrl; img.style.display = 'block'; };
+  reader.readAsDataURL(file);
+}
+const canvas = document.getElementById('sigCanvas'), ctx = canvas.getContext('2d'); let drawing = false;
+canvas.addEventListener('pointerdown', e => { drawing = true; ctx.beginPath(); ctx.moveTo(e.offsetX, e.offsetY); });
+canvas.addEventListener('pointermove', e => { if(!drawing) return; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.strokeStyle = '#0f172a'; ctx.lineTo(e.offsetX, e.offsetY); ctx.stroke(); });
+window.addEventListener('pointerup', () => { drawing = false; });
+function clearSig() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
+
+function submitWorkOrder(){
+  let idx = +document.getElementById('activeWoIndex').value;
+  let w = db.workorders[idx];
+  let dur = (document.getElementById('woDuration').value || '1') + ' jam';
+  let notes = document.getElementById('woNotes').value.trim() || w.task;
+  let postHealth = document.getElementById('woPostHealth').value;
+  let rca = document.getElementById('woRca').value;
+  let partCode = document.getElementById('woPartSelect').value;
+  let partQty = +document.getElementById('woPartQty').value || 0;
+  let partUsedText = '-';
+
+  if (partCode && partQty > 0) {
+    let p = db.parts.find(x => x.code === partCode);
+    if (p) {
+      let deducted = Math.min(p.stock, partQty);
+      p.stock -= deducted;
+      partUsedText = `${deducted}x ${p.code}`;
+    }
+  }
+
+  sigDataUrl = canvas.toDataURL();
+  w.status = 'Completed';
+  if (typeof w.schedIdx === 'number' && db.schedules[w.schedIdx]) db.schedules[w.schedIdx].status = 'Completed';
+
+  let m = db.machines.find(x=>x.code===w.code);
+  if (m) { m.health = postHealth; m.score = postHealth==='Normal'?100:75; }
+
+  db.history.unshift({ date: todayStr(), code: w.code, name: w.name, notes, pic: w.pic, dur, photo: photoDataUrl, sig: sigDataUrl, rca, partUsed: partUsedText });
+  saveDB(); closeModal('woModal'); refreshAll(); toast('Work Order selesai!');
+}
+
+function openReport(idx){
+  let h = db.history[idx], m = db.machines.find(x=>x.code===h.code) || {area:'-', line:'-'};
+  document.getElementById('docModalTitle').textContent = 'Berita Acara';
+  document.getElementById('reportPrintArea').innerHTML = `
+    <div style="border-bottom:2px solid #38bdf8;padding-bottom:10px;margin-bottom:12px;display:flex;justify-content:space-between">
+      <div><b style="font-size:14px">BERITA ACARA PEMELIHARAAN MESIN</b><br><span class="muted">NEXUS PM Operations</span></div>
+      <div style="text-align:right;font-size:11px"><b>Tanggal:</b> ${h.date}<br><b>Status:</b> VALID</div>
+    </div>
+    <table style="width:100%;margin-bottom:12px;border:1px solid var(--border)">
+      <tr><td style="width:30%"><b>Mesin</b></td><td>${h.code} — ${h.name} (${m.area})</td></tr>
+      <tr><td><b>Akar Masalah (RCA)</b></td><td><b>${h.rca}</b></td></tr>
+      <tr><td><b>Part Terpakai</b></td><td>${h.partUsed}</td></tr>
+      <tr><td><b>Uraian Pekerjaan</b></td><td>${h.notes}</td></tr>
+      <tr><td><b>Pelaksana</b></td><td>${h.pic} (Durasi: ${h.dur})</td></tr>
+    </table>
+    ${h.photo?`<div style="margin-bottom:12px"><b style="font-size:10.5px">Foto Bukti:</b><br><img src="${h.photo}" style="max-height:110px;margin-top:4px;border-radius:5px"></div>`:''}
+    <div style="display:flex;justify-content:space-between;margin-top:16px;text-align:center;font-size:11px">
+      <div>Teknisi Pelaksana,<br>${h.sig?`<img src="${h.sig}" style="height:45px;margin:3px 0;background:#fff;border-radius:4px">`:'<div style="height:45px"></div>'}<br><b>(${h.pic})</b></div>
+      <div>Supervisor,<br><div style="height:45px"></div><br><b>(Administrator)</b></div>
+    </div>`;
+  document.getElementById('reportModal').classList.add('show');
+}
+
+function navigate(id){
+  document.querySelectorAll('.section').forEach(s=>s.classList.toggle('active',s.id===id));
+  document.querySelectorAll('.nav button[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===id));
+  let labels={dashboard:'DASHBOARD',machines:'DATA MESIN',schedule:'JADWAL PM',workorders:'WORK ORDERS',history:'RIWAYAT & BERITA ACARA',spareparts:'MASTER SPARE PARTS',reports:'ANALISIS & KPI',users:'DAFTAR PIC'};
+  document.getElementById('crumb').textContent=labels[id];
+  document.getElementById('sidebar').classList.remove('open'); window.scrollTo(0,0);
+}
+document.querySelectorAll('.nav button[data-page]').forEach(b=>b.addEventListener('click',()=>navigate(b.dataset.page)));
+document.getElementById('menuBtn').onclick=()=>document.getElementById('sidebar').classList.toggle('open');
+['machineSearch','areaFilter','healthFilter'].forEach(id=>document.getElementById(id).addEventListener('input',renderMachines));
+['scheduleSearch','scheduleStatus'].forEach(id=>document.getElementById(id).addEventListener('input',renderSchedule));
+['partSearch','partCategory'].forEach(id=>document.getElementById(id).addEventListener('input',renderParts));
+document.getElementById('woSearch').addEventListener('input',renderOthers);
+
+function openMachineModal(){document.getElementById('machineModal').classList.add('show')}
+function closeModal(id){document.getElementById(id).classList.remove('show')}
+function saveMachine(){
+  let code=document.getElementById('fCode').value.trim(), name=document.getElementById('fName').value.trim();
+  if(!code||!name){toast('Kode dan nama wajib diisi');return}
+  db.machines.unshift({code,name,area:document.getElementById('fArea').value,line:document.getElementById('fLine').value||'-',maker:document.getElementById('fMaker').value||'-',year:+document.getElementById('fYear').value||2026,health:'Normal',score:100,hoursNum:0});
+  saveDB(); closeModal('machineModal'); selectMachine(code); toast('Mesin ditambahkan');
+  ['fCode','fName','fLine','fMaker'].forEach(id=>document.getElementById(id).value='');
+}
+function toast(msg){let t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500)}
+function exportCSV(type){
+  let rows, filename;
+  if(type==='machines'){ rows=[['Kode','Nama','Area','Line','Maker','Tahun','Kondisi'],...db.machines.map(m=>[m.code,m.name,m.area,m.line,m.maker,m.year,m.health])]; filename='mesin.csv'; }
+  else if(type==='parts'){ rows=[['PartNumber','Deskripsi','Kategori','Stok','Min','Satuan'],...db.parts.map(p=>[p.code,p.desc,p.cat,p.stock,p.min,p.unit])]; filename='spareparts.csv'; }
+  else { rows=[['Kode','Mesin','Interval','Target','PIC','Status'],...db.schedules.map(x=>[x.machineCode,x.machineName,x.interval,x.next,x.pic,x.status])]; filename='schedule.csv'; }
+  let csv=rows.map(r=>r.map(v=>'"'+String(v).replaceAll('"','""')+'"').join(',')).join('\n');
+  let a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'})); a.download=filename; a.click();
+}
+
+function refreshAll() { renderMachines(); renderSchedule(); renderParts(); renderOthers(); renderNotifications(); }
+refreshAll(); if(selectedCode) selectMachine(selectedCode);
+</script>
+</body>
+</html>
